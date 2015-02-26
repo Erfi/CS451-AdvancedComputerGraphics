@@ -1,0 +1,15 @@
+
+#container {
+	width:60%;
+	height:80%;
+	background-color: yellow;
+	position:absolute;
+}
+
+#prompt {
+	width:95%;
+	height:6%;
+	bottom:0;
+	position:absolute;
+	background-color: yellow;
+}

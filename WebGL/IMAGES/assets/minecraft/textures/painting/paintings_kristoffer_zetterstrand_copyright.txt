@@ -1,0 +1,8 @@
+Copyright info for painting-textures:
+
+Images used in "kz.png" (Minecraft paintings) are made and belongs to Kristoffer Zetterstrand. 
+Kristoffer Zetterstrand is represented by Peter Bergman gallery. 
+These are original images that the Mojang team uses for their default paintings.
+These images are protected with Creative Commons.
+
+Kristoffer Zetterstrand's official homepage: http://zetterstrand.com/

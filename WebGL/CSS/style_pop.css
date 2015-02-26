@@ -1,0 +1,22 @@
+#container {
+	width:60%;
+	height:80%;
+	background-color: yellow;
+	position:absolute;
+}
+
+#prompt {
+	width:95%;
+	height:6%;
+	bottom:0;
+	position:absolute;
+	background-color: yellow;
+}
+
+body {
+	background:#fff;
+	padding:0;
+	margin:0;
+	font-weight: bold;
+	overflow:hidden;
+}

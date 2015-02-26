@@ -1,0 +1,14 @@
+#container {
+	width:60%;
+	height:80%;
+	background-color: yellow;
+	position:absolute;
+}
+
+body {
+	background:#fff;
+	padding:0;
+	margin:0;
+	font-weight: bold;
+	overflow:hidden;
+}
