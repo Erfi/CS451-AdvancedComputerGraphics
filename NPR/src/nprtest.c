@@ -13,12 +13,16 @@ int main(int args, char* argv[]){
 	Image* src;
 	Kernel k;
 
-	// src = image_read("../images/fishman.ppm");
-	// image_write(src, "../images/fishman2.ppm");
-
-	// gaussFilter(src, 3);
-	kernel_create(&k,1);
+	src = image_read("../images/fishman.ppm");
+	Image* border = borderCreate(src);
+	kernel_create(&k,10);
 	kernel_print(&k);
 
-	// image_free(src);
+	gaussFilter(border, &k);
+
+	border = borderRemoval(border);
+
+	// image_write(src, "../images/fishman2.ppm");
+	image_write(border,"../images/test.ppm");
+	
 }

@@ -13,6 +13,8 @@ typedef struct{
 }Kernel;
 
 void gaussFilter(Image* src, Kernel* k);
+Image* borderCreate(Image* src);
+Image* borderRemoval(Image* src);
 void kernel_create(Kernel * k,float sigma);
 void kernel_print(Kernel* kernel);
 
