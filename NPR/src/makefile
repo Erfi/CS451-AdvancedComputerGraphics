@@ -26,16 +26,16 @@ LIBS = -lm -limageIO
 LFLAGS = -L$(LIBDIR)
 
 # put all of the relevant include files here
-_DEPS = ppmIO.h ppmMethods.h Image.h fract.h color.h point.h line.h circle.h polyline.h list.h polygon.h matrix.h view.h module.h drawState.h bezier.h light.h
+_DEPS = ppmIO.h ppmMethods.h Image.h fract.h color.h point.h line.h circle.h polyline.h list.h polygon.h matrix.h view.h module.h drawState.h bezier.h light.h npr.h
 
 # convert them to point to the right place
 DEPS = $(patsubst %,$(INCDIR)/%,$(_DEPS))
 
 # put a list of the executables here
-EXECUTABLES = imagetest mandeltest testbench test4b testbitmap polygonStress hexagon task6_1 test5a test5d test5b test5c proj5_ext1 treeScene scene2d test6a cube test6b task5_4 test7a test7b test7c teapot task6_3 zdebug test8a cubism ball test9A cityScene test9a test9b test9d test9c final rayTest
+EXECUTABLES = imagetest mandeltest testbench test4b testbitmap polygonStress hexagon task6_1 test5a test5d test5b test5c proj5_ext1 treeScene scene2d test6a cube test6b task5_4 test7a test7b test7c teapot task6_3 zdebug test8a cubism ball test9A cityScene test9a test9b test9d test9c final rayTest nprtest
 
 # put a list of all the object files here for all executables (with .o endings)
-_OBJ = imagetest.o mandeltest.o testbench.o test3a.o test3c.o 3Dmodel.o test4b.o test4a.o testbitmap.o polygonStress.o hexagon.o task6_1.o test5a.o test5d.o test5b.o test5c.o proj5_ext1.o treeScene.o scene2d.o test6a.o cube.o test6b.o task5_4.o test7a.o test7b.o test7c.o teapot.o task6_3.o zdebug.o test8a.o cubism.o ball.o test9A.o cityScene.o test9a.o test9b.o test9d.o test9c.o final.o rayTest.o
+_OBJ = imagetest.o mandeltest.o testbench.o test3a.o test3c.o 3Dmodel.o test4b.o test4a.o testbitmap.o polygonStress.o hexagon.o task6_1.o test5a.o test5d.o test5b.o test5c.o proj5_ext1.o treeScene.o scene2d.o test6a.o cube.o test6b.o task5_4.o test7a.o test7b.o test7c.o teapot.o task6_3.o zdebug.o test8a.o cubism.o ball.o test9A.o cityScene.o test9a.o test9b.o test9d.o test9c.o final.o rayTest.o nprtest.o
 
 # convert them to point to the right place
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
@@ -166,6 +166,9 @@ final: $(ODIR)/final.o
 	$(CC) -g -o $(BINDIR)/$@ $^ $(LFLAGS) $(LIBS)
 
 rayTest: $(ODIR)/rayTest.o
+	$(CC) -g -o $(BINDIR)/$@ $^ $(LFLAGS) $(LIBS)
+
+nprtest: $(ODIR)/nprtest.o
 	$(CC) -g -o $(BINDIR)/$@ $^ $(LFLAGS) $(LIBS)
 
 .PHONY: clean
