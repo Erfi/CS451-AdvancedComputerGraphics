@@ -56,6 +56,9 @@ double isLightVisible(Point* pt, Ray* ray, Sphere* objectArray,int lengthOfArray
 Vector reflect(Vector a, Vector normal);
 Vector Color_to_vector(Color *a);
 Color Vector_to_color(Vector* a);
+Closest intersectSceneLight(Ray* ray, Sphere* objectArray, int lengthOfArray);
+double sphereIntersectionLight(Ray* ray, Sphere* sphere);
+
 
 int main(int argc, char* argv[]){
 	printf("Congrats your makefile works!\n");
@@ -70,27 +73,27 @@ int main(int argc, char* argv[]){
 	
 
 	//setting the camera
-	point_set3D(&camera.position, 3, 0, 20);
-	vector_set(&camera.direction, -3, 0, -20.0);
+	point_set3D(&camera.position, 0, 1.8, 10);
+	vector_set(&camera.direction, 0, -1.8, -10);
 	camera.fieldOfView = 60.0;
 
 	//setting the light
-	point_set3D(&light.position, 0, 5.0, 15);
+	point_set3D(&light.position, 0, 18.0, 100);
 
 	//setting the sphere
-	point_set3D(&sphere.position, 3, 0, 5.0);
+	point_set3D(&sphere.position, 0, 0, -5);
 	Color_set(&sphere.color, 1, 0, 0);
-	sphere.specular = 0.1;
+	sphere.specular = 0.2;
 	sphere.lambert = 0.7;
-	sphere.ambient = 0.1;
+	sphere.ambient = 0;
 	sphere.radius = 3;
 
 	//setting the sphere2
-	point_set3D(&sphere2.position, 2, 3, 10.0);
+	point_set3D(&sphere2.position, 4, 0, 0);
 	Color_set(&sphere2.color, 0, 0, 1);
 	sphere2.specular = 0.1;
 	sphere2.lambert = 0.7;
-	sphere2.ambient = 0.1;
+	sphere2.ambient = 0;
 	sphere2.radius = 1;
 
 	//setting the object array
@@ -99,7 +102,7 @@ int main(int argc, char* argv[]){
 
 
 	//setting the image
-	src = image_create(700, 700);
+	src = image_create(800, 800);
 
 	render(src, &camera, &light, objectArray, lengthOfArray,depth);
 	image_write(src, "../images/raytracing.ppm");
@@ -109,7 +112,7 @@ int main(int argc, char* argv[]){
 
 void render(Image* src, Camera* camera, Light* light, Sphere* objectArray, int lengthOfArray, int depth){
 	Vector vup;
-	vector_set(&vup, 0.0, 1.0, 0.0);
+	vector_set(&vup, 0.0, 1, 0);
 
 	Vector eyevector = vector_subtract(&camera->direction, &camera->position); //vpn
 	vector_normalize(&eyevector);
@@ -120,6 +123,7 @@ void render(Image* src, Camera* camera, Light* light, Sphere* objectArray, int l
 
 	Vector vpUp;
 	vector_cross(&vpRight, &eyevector, &vpUp);
+	vector_normalize(&vpUp);
 
 	double fovRadians =  M_PI * (camera->fieldOfView / 2) / 180;
 	double heightWidthRatio = src->rows/ src->cols;
@@ -135,7 +139,7 @@ void render(Image* src, Camera* camera, Light* light, Sphere* objectArray, int l
 	ray.position = camera->position;
 
 	// test condition
-	vector_set(&ray.direction,1,2,4);
+	// vector_set(&ray.direction,1,2,4);
 
 	
 	int x, y;
@@ -159,14 +163,13 @@ void render(Image* src, Camera* camera, Light* light, Sphere* objectArray, int l
 
 Color trace(Ray* ray, Camera* camera, Light* light, Sphere* objectArray, int lengthOfArray,int depth){
 	Color color;
-	if(depth > 10){
+	if(depth > 3){
 		Color_set(&color, -1, -1, -1);
 		return color;
 	}
 
 	Closest closeestObject = intersectScene(ray, objectArray,lengthOfArray);
 	if(closeestObject.distance == INFINITY){
-		// printf("happening \n");
 		Color_set(&color, 1,1,1);
 		return color;	
 	}
@@ -189,8 +192,8 @@ Color trace(Ray* ray, Camera* camera, Light* light, Sphere* objectArray, int len
 Closest intersectScene(Ray* ray, Sphere* objectArray, int lengthOfArray){
 
 	Closest close;
+	// close.isValid =0;
 	close.distance = INFINITY;
-
 
 	int i;
 	for (i = 0; i < lengthOfArray; i++)
@@ -200,10 +203,60 @@ Closest intersectScene(Ray* ray, Sphere* objectArray, int lengthOfArray){
 		if(dist != -1 && (dist < close.distance)){
 			close.distance = dist;
 			close.sphere = obj;
+			// close.isValid = 1;
 		}
 	}
 	return close;
 
+
+}
+
+Closest intersectSceneLight(Ray* ray, Sphere* objectArray, int lengthOfArray){
+
+	Closest close;
+	// close.isValid =0;
+	close.distance = INFINITY;
+
+	int i;
+	for (i = 0; i < lengthOfArray; i++)
+	{
+		Sphere obj = objectArray[i];
+		double dist = sphereIntersectionLight(ray,&obj);
+		if(dist != -1 && (dist < close.distance)){
+			close.distance = dist;
+			close.sphere = obj;
+			// close.isValid = 1;
+		}
+	}
+	return close;
+
+
+}
+
+double sphereIntersectionLight(Ray* ray, Sphere* sphere){
+	Vector centered = vector_subtract(&sphere->position, &ray->position);
+
+	// printf("centered! \n");
+	// point_print(&centered,stdout);
+
+	vector_normalize(&ray->direction);
+
+	double v = vector_dot(&centered, &ray->direction);
+		// printf("v! %f \n",v);
+
+	double squareCenter = vector_dot(&centered, &centered);
+	
+	// printf("squareCenter! %f \n",squareCenter);
+
+	double halfchordSq = (sphere->radius*sphere->radius) - (squareCenter) + (v*v);
+
+	// printf("halfchordSq! %f \n",halfchordSq);
+
+	if(halfchordSq<0){
+		// printf("happening no halfchordSq \n");
+		return -1;
+	}
+	return v- sqrt(halfchordSq);
 
 }
 
@@ -227,6 +280,7 @@ double sphereIntersection(Ray* ray, Sphere* sphere){
 	// printf("halfchordSq! %f \n",halfchordSq);
 
 	if(halfchordSq<0){
+		// printf("happening no halfchordSq \n");
 		return -1;
 	}
 	return v- sqrt(halfchordSq);
@@ -255,6 +309,7 @@ Color surface(Ray* ray, Camera* camera, Light* light, Sphere* obj,Sphere* object
 		for(i=0; i<numLights; i++){
 			Light l = light[i];
 			if(isLightVisible(pointAtTime, ray, sphere,lengthOfArray, &l) == 0){
+				// printf("continuing\n");
 				continue;
 			}
 			Vector subtract = vector_subtract(&l.position, pointAtTime);
@@ -273,7 +328,7 @@ Color surface(Ray* ray, Camera* camera, Light* light, Sphere* obj,Sphere* object
 		reflected.direction = reflect(ray->direction, normal);
 
 		Color color = trace(&reflected, camera, light, objectArray,lengthOfArray, ++depth);
-		if(color.rgb[0] > 0){
+		if(color.rgb[0] >= 0){
 
 			Vector vector_color = Color_to_vector(&color);
 			Vector scaled = vector_scale(&vector_color, sphere->specular);
@@ -292,7 +347,6 @@ Color surface(Ray* ray, Camera* camera, Light* light, Sphere* obj,Sphere* object
 	Vector result = vector_add(&temp, &scale2);
 
 	return Vector_to_color(&result);
-
 }
 
 double isLightVisible(Point* pt, Ray* ray, Sphere* objectArray,int lengthOfArray, Light* light){
@@ -301,15 +355,24 @@ double isLightVisible(Point* pt, Ray* ray, Sphere* objectArray,int lengthOfArray
 	tempRay.direction = vector_subtract((Vector*)pt, &light->position);
 	vector_normalize(&tempRay.direction);
 
-	Closest closeObj = intersectScene(&tempRay, objectArray,lengthOfArray);
+	Closest closeObj = intersectSceneLight(&tempRay, objectArray,lengthOfArray);
 
-	if(closeObj.distance > -0.005){
+	if(closeObj.distance > -.005){
 		return 1;
 	}
 	else{
 		return 0;
 	}
 }
+
+
+// function isLightVisible(pt, scene, light) {
+//     var distObject =  intersectScene({
+//         point: pt,
+//         vector: Vector.unitVector(Vector.subtract(pt, light))
+//     }, scene);
+//     return distObject[0] > -0.005;
+// }
 
 
 Vector reflect(Vector a, Vector normal){
