@@ -28,12 +28,23 @@ typedef struct{
 	float lambert;
 	float ambient;
 	float radius;
+	int id;
 }Sphere;
 //=========Camera============
+// typedef struct{
+// 	Point position;
+// 	Vector direction;
+// 	float fieldOfView;
+// }Camera;
 typedef struct{
-	Point position;
-	Vector direction;
-	float fieldOfView;
+	Point vrp;
+	Vector vpn;
+	Vector vup;
+	double d;
+	double du;
+	double dv;
+	int screenx;
+	int screeny;
 }Camera;
 //========Light============
 typedef struct{
@@ -73,28 +84,41 @@ int main(int argc, char* argv[]){
 	
 
 	//setting the camera
-	point_set3D(&camera.position, 0, 1.8, 10);
-	vector_set(&camera.direction, 0, -1.8, -10);
-	camera.fieldOfView = 60.0;
+	point_set3D(&(camera.vrp), 0, 0, 30 );
+	vector_set( &(camera.vpn), 0, 0, -30 );
+	vector_set( &(camera.vup), 0.0, 1.0, 0.0 );
+	camera.screenx = 800;
+	camera.screeny = 800;
+	camera.d = 1;
+	camera.du = 1.0;
+	camera.dv = 1.0;
+
+	// point_set3D(&camera.position, 0, 1.8, 10);
+	// vector_set(&camera.direction, 0, -1.8, -10);
+	// camera.fieldOfView = 60.0;
+
+
 
 	//setting the light
-	point_set3D(&light.position, 0, 18.0, 100);
+	point_set3D(&light.position, 10, 0, 10);
 
 	//setting the sphere
-	point_set3D(&sphere.position, 0, 0, -5);
+	point_set3D(&sphere.position, 0, 0, 0);
 	Color_set(&sphere.color, 1, 0, 0);
-	sphere.specular = 0.2;
+	sphere.specular = 0.1;
 	sphere.lambert = 0.7;
 	sphere.ambient = 0;
-	sphere.radius = 3;
+	sphere.radius = 2;
+	sphere.id = 1;
 
 	//setting the sphere2
-	point_set3D(&sphere2.position, 4, 0, 0);
+	point_set3D(&sphere2.position, 10, 0, 0);
 	Color_set(&sphere2.color, 0, 0, 1);
 	sphere2.specular = 0.1;
 	sphere2.lambert = 0.7;
 	sphere2.ambient = 0;
-	sphere2.radius = 1;
+	sphere2.radius = 4;
+	sphere2.id = 2;
 
 	//setting the object array
 	objectArray[0] = sphere;
@@ -102,62 +126,99 @@ int main(int argc, char* argv[]){
 
 
 	//setting the image
-	src = image_create(800, 800);
+	src = image_create(camera.screenx, camera.screeny);
 
 	render(src, &camera, &light, objectArray, lengthOfArray,depth);
-	image_write(src, "../images/raytracing.ppm");
+	image_write(src, "../images/rayAfter.ppm");
 	image_free(src);
 	
 }
 
 void render(Image* src, Camera* camera, Light* light, Sphere* objectArray, int lengthOfArray, int depth){
-	Vector vup;
-	vector_set(&vup, 0.0, 1, 0);
-
-	Vector eyevector = vector_subtract(&camera->direction, &camera->position); //vpn
-	vector_normalize(&eyevector);
-
-	Vector vpRight;
-	vector_cross(&eyevector,&vup,&vpRight);
-	vector_normalize(&vpRight);
-
-	Vector vpUp;
-	vector_cross(&vpRight, &eyevector, &vpUp);
-	vector_normalize(&vpUp);
-
-	double fovRadians =  M_PI * (camera->fieldOfView / 2) / 180;
-	double heightWidthRatio = src->rows/ src->cols;
-	double halfWidth = tan(fovRadians);
-	double halfHeight = heightWidthRatio * halfWidth;
-	double camerawidth = halfWidth * 2;
-	double cameraheight = halfHeight * 2;
-	double pixelWidth = camerawidth / (src->cols - 1);
-	double pixelHeight = cameraheight / (src->rows - 1);
-
-	Color clr;
 	Ray ray;
-	ray.position = camera->position;
+	Color clr;
 
-	// test condition
-	// vector_set(&ray.direction,1,2,4);
+	//setting up the orthogonal view vectors
+	Vector u;
+	vector_cross(&camera->vup,&camera->vpn,&u);
+	vector_cross(&camera->vpn,&u,&camera->vup);
 
-	
-	int x, y;
-	for(x=0; x < src->cols; x++){
-		for(y=0; y < src->rows; y++){
-			Vector xComp = vector_scale(&vpRight, (x * pixelWidth) - halfWidth);
-			Vector yComp = vector_scale(&vpUp, (y * pixelHeight) - halfHeight);
-			Vector sum = vector_add(&xComp, &yComp);
-			ray.direction = vector_add(&sum, &eyevector);
+	//normalize
+	vector_normalize(&camera->vpn);
+	vector_normalize(&camera->vup);
+	vector_normalize(&u);
+
+	//center of projection
+	Point COP;
+	point_set3D(&COP, camera->vrp.val[0] - camera->d*camera->vpn.val[0], camera->vrp.val[1] - camera->d*camera->vpn.val[1], camera->vrp.val[2] - camera->d*camera->vpn.val[2]);
+
+	//ray position
+	ray.position = COP;
+
+	int i, j;
+	for (i=0; i<camera->screeny; i++){
+		for(j=0; j<camera->screenx; j++){
+			//ray Direction
+			double rayViewPlaneX = ((camera->du/2)-(0.5+j)*(camera->du/camera->screenx))*u.val[0] + ((camera->dv/2)-(0.5+i)*(camera->dv/camera->screeny))*camera->vup.val[0] + (camera->vrp.val[0]);
+			double rayViewPlaneY = ((camera->du/2)-(0.5+j)*(camera->du/camera->screenx))*u.val[1] + ((camera->dv/2)-(0.5+i)*(camera->dv/camera->screeny))*camera->vup.val[1] + (camera->vrp.val[1]);
+			double rayViewPlaneZ = ((camera->du/2)-(0.5+j)*(camera->du/camera->screenx))*u.val[2] + ((camera->dv/2)-(0.5+i)*(camera->dv/camera->screeny))*camera->vup.val[2] + (camera->vrp.val[2]);
+			
+			vector_set(&ray.direction, rayViewPlaneX - COP.val[0], rayViewPlaneY - COP.val[1], rayViewPlaneZ - COP.val[2]);
 
 			//trace 
 			clr = trace(&ray, camera, light, objectArray,lengthOfArray, depth);
-			src->data[x][y].rgb[0] = clr.rgb[0];
-			src->data[x][y].rgb[1] = clr.rgb[1];
-			src->data[x][y].rgb[2] = clr.rgb[2];
-		}
+			src->data[i][j].rgb[0] = clr.rgb[0];
+			src->data[i][j].rgb[1] = clr.rgb[1];
+			src->data[i][j].rgb[2] = clr.rgb[2];
+		}	
+	}	
 
-	}
+
+
+	// Vector vup;
+	// vector_set(&vup, 0.0, 1, 0);
+
+	// Vector eyevector = vector_subtract(&camera->direction, &camera->position); //vpn
+	// vector_normalize(&eyevector);
+
+	// Vector vpRight;
+	// vector_cross(&eyevector,&vup,&vpRight);
+	// vector_normalize(&vpRight);
+
+	// Vector vpUp;
+	// vector_cross(&vpRight, &eyevector, &vpUp);
+	// vector_normalize(&vpUp);
+
+	// double fovRadians =  M_PI * (camera->fieldOfView / 2) / 180;
+	// double heightWidthRatio = src->rows/ src->cols;
+	// double halfWidth = tan(fovRadians);
+	// double halfHeight = heightWidthRatio * halfWidth;
+	// double camerawidth = halfWidth * 2;
+	// double cameraheight = halfHeight * 2;
+	// double pixelWidth = camerawidth / (src->cols - 1);
+	// double pixelHeight = cameraheight / (src->rows - 1);
+
+	// Color clr;
+	// Ray ray;
+	// ray.position = camera->position;
+
+	
+	// int x, y;
+	// for(x=0; x < src->cols; x++){
+	// 	for(y=0; y < src->rows; y++){
+	// 		Vector xComp = vector_scale(&vpRight, (x * pixelWidth) - halfWidth);
+	// 		Vector yComp = vector_scale(&vpUp, (y * pixelHeight) - halfHeight);
+	// 		Vector sum = vector_add(&xComp, &yComp);
+	// 		ray.direction = vector_add(&sum, &eyevector);
+
+	// 		//trace 
+	// 		clr = trace(&ray, camera, light, objectArray,lengthOfArray, depth);
+	// 		src->data[x][y].rgb[0] = clr.rgb[0];
+	// 		src->data[x][y].rgb[1] = clr.rgb[1];
+	// 		src->data[x][y].rgb[2] = clr.rgb[2];
+	// 	}
+
+	// }
 
 }
 
@@ -169,6 +230,7 @@ Color trace(Ray* ray, Camera* camera, Light* light, Sphere* objectArray, int len
 	}
 
 	Closest closeestObject = intersectScene(ray, objectArray,lengthOfArray);
+	printf("Trace >> closeestObject.distance : %f | depth : %d \n", closeestObject.distance, depth);
 	if(closeestObject.distance == INFINITY){
 		Color_set(&color, 1,1,1);
 		return color;	
@@ -200,6 +262,9 @@ Closest intersectScene(Ray* ray, Sphere* objectArray, int lengthOfArray){
 	{
 		Sphere obj = objectArray[i];
 		double dist = sphereIntersection(ray,&obj);
+		if(dist==0){
+			continue;
+		}
 		if(dist != -1 && (dist < close.distance)){
 			close.distance = dist;
 			close.sphere = obj;
@@ -222,6 +287,9 @@ Closest intersectSceneLight(Ray* ray, Sphere* objectArray, int lengthOfArray){
 	{
 		Sphere obj = objectArray[i];
 		double dist = sphereIntersectionLight(ray,&obj);
+		if(dist==0){
+			continue;
+		}
 		if(dist != -1 && (dist < close.distance)){
 			close.distance = dist;
 			close.sphere = obj;
@@ -308,8 +376,9 @@ Color surface(Ray* ray, Camera* camera, Light* light, Sphere* obj,Sphere* object
 		int numLights = 1;
 		for(i=0; i<numLights; i++){
 			Light l = light[i];
+			// printf("sphere hit is %d\n",sphere->id );
 			if(isLightVisible(pointAtTime, ray, sphere,lengthOfArray, &l) == 0){
-				// printf("continuing\n");
+				
 				continue;
 			}
 			Vector subtract = vector_subtract(&l.position, pointAtTime);
@@ -326,7 +395,7 @@ Color surface(Ray* ray, Camera* camera, Light* light, Sphere* obj,Sphere* object
 		Ray reflected;
 		reflected.position = (Point)*pointAtTime;
 		reflected.direction = reflect(ray->direction, normal);
-
+		// printf("HEY THIS IS HAPPENING\n" );
 		Color color = trace(&reflected, camera, light, objectArray,lengthOfArray, ++depth);
 		if(color.rgb[0] >= 0){
 
@@ -356,6 +425,7 @@ double isLightVisible(Point* pt, Ray* ray, Sphere* objectArray,int lengthOfArray
 	vector_normalize(&tempRay.direction);
 
 	Closest closeObj = intersectSceneLight(&tempRay, objectArray,lengthOfArray);
+	// printf("sphere blocking is %d\n",closeObj.sphere.id );
 
 	if(closeObj.distance > -.005){
 		return 1;
@@ -404,15 +474,5 @@ Color Vector_to_color(Vector* a){
         exit(-1);
 	}
 }
-
-
-
-
-
-
-
-
-
-
 
 
