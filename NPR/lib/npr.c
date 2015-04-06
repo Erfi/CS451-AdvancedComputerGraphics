@@ -245,9 +245,9 @@ void sobelFilter(Image* border, Image* sobelMask, SobelOperator* sop){
 					sumy[2] += border->data[i+2+k][j+2+l].rgb[2] * sop->Gy[k+1][l+1];
 				}
 			} 
-			sobelMask->data[i][j].rgb[0] = sumx[0] + sumy[0];
-			sobelMask->data[i][j].rgb[1] = sumx[1] + sumy[1]; 
-			sobelMask->data[i][j].rgb[2] = sumx[2] + sumy[2];
+			sobelMask->data[i][j].rgb[0] = sqrt(sumx[0]*sumx[0] + sumy[0]*sumy[0]);
+			sobelMask->data[i][j].rgb[1] = sqrt(sumx[1]*sumx[1] + sumy[1]*sumy[1]); 
+			sobelMask->data[i][j].rgb[2] = sqrt(sumx[2]*sumx[2] + sumy[2]*sumy[2]);
 		}
 
 	}

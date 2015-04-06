@@ -14,7 +14,7 @@ int main(int args, char* argv[]){
 	Image* border;//to hold the blured image with extended borders
 	Image* sobelMask;//to record the result after sobel operator applied
 	Kernel k;//to hold the gaussian filter convolution matrix
-	SobelOperator sop;
+	SobelOperator sop;//holds the sobel operators for horizontal and vertical axis (Gx & Gy)
 
 	src = image_read("../images/fishman.ppm");
 	sobelMask = image_create(src->rows, src->cols);
@@ -25,7 +25,7 @@ int main(int args, char* argv[]){
 	kernel_print(&k);
 	gaussFilter(border, &k);
 
-	toGreyscale(border);
+	// toGreyscale(border);
 
 	sobel_create(&sop);
 	sobel_print(&sop);
@@ -35,7 +35,7 @@ int main(int args, char* argv[]){
 
 	// border = borderRemoval(border);
 
-	image_write(sobelMask,"../images/sobel.ppm");
+	image_write(sobelMask,"../images/fishmanSobel.ppm");
 	// image_write(border,"../images/border.ppm");
 
 	//free images
