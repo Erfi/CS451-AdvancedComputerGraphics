@@ -248,10 +248,92 @@ void sobelFilter(Image* border, Image* sobelMask, SobelOperator* sop){
 			sobelMask->data[i][j].rgb[0] = sqrt(sumx[0]*sumx[0] + sumy[0]*sumy[0]);
 			sobelMask->data[i][j].rgb[1] = sqrt(sumx[1]*sumx[1] + sumy[1]*sumy[1]); 
 			sobelMask->data[i][j].rgb[2] = sqrt(sumx[2]*sumx[2] + sumy[2]*sumy[2]);
+
+			//We are assuming that the picture is grey scale and the first channel (red) gives a 
+			//good representation of the theta angle
+			double tempAngle =0;
+			if(sumx[0] != 0){
+				tempAngle = atan(sumy[0]/sumx[0])*180/M_PI;
+			}else{
+				tempAngle = 90;
+			}
+			
+			if(tempAngle <0){ //just to change the range of 0 : -90 to 180:90 for easier underestanding  
+				tempAngle += 180;
+			}
+
+			//categorizing the angles to 0, 45, 90, 135
+			if((tempAngle >=0 && tempAngle <22.5) || (tempAngle >157.5 && tempAngle <=180)){ //0:22.5 && 157.5:180
+				sobelMask->data[i][j].theta = 0;
+			}else if(tempAngle >= 22.5 && tempAngle < 67.5){ //22.5:67.5
+				sobelMask->data[i][j].theta = 45;
+			}else if(tempAngle >= 67.5 && tempAngle <112.5){ //67.5:112.5
+				sobelMask->data[i][j].theta = 90;
+			}else{											//112.5:157.5
+				sobelMask->data[i][j].theta = 135;
+			}
+			// printf("Theta: %d\n", sobelMask->data[i][j].theta);
 		}
 
 	}
 
+}
+
+//the input is assumed to be a greyscale image
+void nonMaxSuppression(Image* src){
+	int i,j;
+	for(i=0; i<src->rows; i++){
+		for(j=0; j<src->cols; j++){
+			if(i==0 || i==src->rows-1 || j==0 || j==src->cols-1){ //if border then make it black (temporary solution)
+				src->data[i][j].rgb[0] = 0;
+				src->data[i][j].rgb[1] = 0;
+				src->data[i][j].rgb[2] = 0;
+				continue;
+			}
+			if(src->data[i][j].theta == 0){
+				if((src->data[i][j].rgb[0] < src->data[i][j+1].rgb[0]) || (src->data[i][j].rgb[0] < src->data[i][j-1].rgb[0])){
+					src->data[i][j].rgb[0] = 0;
+					src->data[i][j].rgb[1] = 0;
+					src->data[i][j].rgb[2] = 0;
+				}
+			}else if(src->data[i][j].theta == 45){
+				if((src->data[i][j].rgb[0] < src->data[i-1][j+1].rgb[0]) || (src->data[i][j].rgb[0] < src->data[i+1][j-1].rgb[0])){
+					src->data[i][j].rgb[0] = 0;
+					src->data[i][j].rgb[1] = 0;
+					src->data[i][j].rgb[2] = 0;
+				}
+			}else if(src->data[i][j].theta == 90){
+				if((src->data[i][j].rgb[0] < src->data[i-1][j].rgb[0]) || (src->data[i][j].rgb[0] < src->data[i+1][j].rgb[0])){
+					src->data[i][j].rgb[0] = 0;
+					src->data[i][j].rgb[1] = 0;
+					src->data[i][j].rgb[2] = 0;
+				}
+			}else if(src->data[i][j].theta == 135){
+				if((src->data[i][j].rgb[0] < src->data[i-1][j-1].rgb[0]) || (src->data[i][j].rgb[0] < src->data[i+1][j+1].rgb[0])){
+					src->data[i][j].rgb[0] = 0;
+					src->data[i][j].rgb[1] = 0;
+					src->data[i][j].rgb[2] = 0;
+				}
+			}
+		}
+	}
+}
+
+void doubleThreshold(Image* src, double high, double low){
+	int i, j;
+	for(i=0; i<src->rows; i++){
+		for(j=0; j<src->cols; j++){
+			if(src->data[i][j].rgb[0] > high){
+				src->data[i][j].rgb[0] = 1;
+				src->data[i][j].rgb[1] = 1;
+				src->data[i][j].rgb[2] = 1;
+			}else if(src->data[i][j].rgb[0] < low){
+				src->data[i][j].rgb[0] = 0;
+				src->data[i][j].rgb[1] = 0;
+				src->data[i][j].rgb[2] = 0;
+			}
+		}
+	}
 }
 
 

@@ -13,6 +13,7 @@ typedef struct {
 	float rgb[3];
 	float a;
 	float z;
+	int theta;
 	LinkedList* list;
 } FPixel;
 

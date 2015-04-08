@@ -6,6 +6,7 @@ File: nprtest.c
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include "image.h"
 #include "npr.h"
 
@@ -25,20 +26,24 @@ int main(int args, char* argv[]){
 	kernel_print(&k);
 	gaussFilter(border, &k);
 
-	// toGreyscale(border);
+	toGreyscale(border);
 
 	sobel_create(&sop);
 	sobel_print(&sop);
 	sobelFilter(border, sobelMask, &sop);
+	nonMaxSuppression(sobelMask);
+	doubleThreshold(sobelMask, 0.8, 0.3);
 
 
 
 	// border = borderRemoval(border);
 
-	image_write(sobelMask,"../images/fishmanSobel.ppm");
+	image_write(sobelMask,"../images/fishmanSuppressed.ppm");
 	// image_write(border,"../images/border.ppm");
+	
 
 	//free images
-
-	
+	image_free(src);
+	image_free(border);
+	image_free(sobelMask);	
 }
