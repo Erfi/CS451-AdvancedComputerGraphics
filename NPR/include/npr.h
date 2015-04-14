@@ -26,7 +26,7 @@ void sobel_create(SobelOperator* sop);
 void sobelFilter(Image* border, Image* sobelMask, SobelOperator* sop);
 void sobel_print(SobelOperator* sop);
 void toGreyscale(Image* src);
-void nonMaxSuppression(Image* src);
+void nonMaxSuppression(Image* src, Image* buffer);
 void doubleThreshold(Image* src, double high, double low);
 
 #endif

@@ -280,40 +280,61 @@ void sobelFilter(Image* border, Image* sobelMask, SobelOperator* sop){
 }
 
 //the input is assumed to be a greyscale image
-void nonMaxSuppression(Image* src){
+void nonMaxSuppression(Image* src, Image* buffer){
 	int i,j;
 	for(i=0; i<src->rows; i++){
 		for(j=0; j<src->cols; j++){
 			if(i==0 || i==src->rows-1 || j==0 || j==src->cols-1){ //if border then make it black (temporary solution)
-				src->data[i][j].rgb[0] = 0;
-				src->data[i][j].rgb[1] = 0;
-				src->data[i][j].rgb[2] = 0;
+				buffer->data[i][j].rgb[0] = 0;
+				buffer->data[i][j].rgb[1] = 0;
+				buffer->data[i][j].rgb[2] = 0;
+				buffer->data[i][j].theta = src->data[i][j].theta;
 				continue;
 			}
 			if(src->data[i][j].theta == 0){
 				if((src->data[i][j].rgb[0] < src->data[i][j+1].rgb[0]) || (src->data[i][j].rgb[0] < src->data[i][j-1].rgb[0])){
-					src->data[i][j].rgb[0] = 0;
-					src->data[i][j].rgb[1] = 0;
-					src->data[i][j].rgb[2] = 0;
+					buffer->data[i][j].rgb[0] = 0;
+					buffer->data[i][j].rgb[1] = 0;
+					buffer->data[i][j].rgb[2] = 0;
+				}else{
+					buffer->data[i][j].rgb[0] = src->data[i][j].rgb[0];
+					buffer->data[i][j].rgb[1] = src->data[i][j].rgb[1];
+					buffer->data[i][j].rgb[2] = src->data[i][j].rgb[2];
 				}
+				buffer->data[i][j].theta = src->data[i][j].theta;
 			}else if(src->data[i][j].theta == 45){
 				if((src->data[i][j].rgb[0] < src->data[i-1][j+1].rgb[0]) || (src->data[i][j].rgb[0] < src->data[i+1][j-1].rgb[0])){
-					src->data[i][j].rgb[0] = 0;
-					src->data[i][j].rgb[1] = 0;
-					src->data[i][j].rgb[2] = 0;
+					buffer->data[i][j].rgb[0] = 0;
+					buffer->data[i][j].rgb[1] = 0;
+					buffer->data[i][j].rgb[2] = 0;
+				}else{
+					buffer->data[i][j].rgb[0] = src->data[i][j].rgb[0];
+					buffer->data[i][j].rgb[1] = src->data[i][j].rgb[1];
+					buffer->data[i][j].rgb[2] = src->data[i][j].rgb[2];
 				}
+				buffer->data[i][j].theta = src->data[i][j].theta;
 			}else if(src->data[i][j].theta == 90){
 				if((src->data[i][j].rgb[0] < src->data[i-1][j].rgb[0]) || (src->data[i][j].rgb[0] < src->data[i+1][j].rgb[0])){
-					src->data[i][j].rgb[0] = 0;
-					src->data[i][j].rgb[1] = 0;
-					src->data[i][j].rgb[2] = 0;
+					buffer->data[i][j].rgb[0] = 0;
+					buffer->data[i][j].rgb[1] = 0;
+					buffer->data[i][j].rgb[2] = 0;
+				}else{
+					buffer->data[i][j].rgb[0] = src->data[i][j].rgb[0];
+					buffer->data[i][j].rgb[1] = src->data[i][j].rgb[1];
+					buffer->data[i][j].rgb[2] = src->data[i][j].rgb[2];
 				}
+				buffer->data[i][j].theta = src->data[i][j].theta;
 			}else if(src->data[i][j].theta == 135){
 				if((src->data[i][j].rgb[0] < src->data[i-1][j-1].rgb[0]) || (src->data[i][j].rgb[0] < src->data[i+1][j+1].rgb[0])){
-					src->data[i][j].rgb[0] = 0;
-					src->data[i][j].rgb[1] = 0;
-					src->data[i][j].rgb[2] = 0;
+					buffer->data[i][j].rgb[0] = 0;
+					buffer->data[i][j].rgb[1] = 0;
+					buffer->data[i][j].rgb[2] = 0;
+				}else{
+					buffer->data[i][j].rgb[0] = src->data[i][j].rgb[0];
+					buffer->data[i][j].rgb[1] = src->data[i][j].rgb[1];
+					buffer->data[i][j].rgb[2] = src->data[i][j].rgb[2];
 				}
+				buffer->data[i][j].theta = src->data[i][j].theta;
 			}
 		}
 	}
