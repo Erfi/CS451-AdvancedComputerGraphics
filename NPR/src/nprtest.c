@@ -18,13 +18,13 @@ int main(int args, char* argv[]){
 	Kernel k;//to hold the gaussian filter convolution matrix
 	SobelOperator sop;//holds the sobel operators for horizontal and vertical axis (Gx & Gy)
 
-	src = image_read("../images/beer.ppm");
+	src = image_read("../images/fishman.ppm");
 	sobelMask = image_create(src->rows, src->cols);
 	border = borderCreate(src);
 	nonMaxSuppressionBuffer = image_create(sobelMask->rows, sobelMask->cols);
 	
 	//bluer
-	kernel_create(&k,10);
+	kernel_create(&k,100);
 	kernel_print(&k);
 	gaussFilter(border, &k);
 
@@ -40,13 +40,13 @@ int main(int args, char* argv[]){
 	nonMaxSuppression(sobelMask, nonMaxSuppressionBuffer);
 
 	//double threshold
-	doubleThreshold(nonMaxSuppressionBuffer, 0.2, 0.18);
+	doubleThreshold(nonMaxSuppressionBuffer, 0.45, 0.1);
 
 	//hysterisis 
 	hysteresis(nonMaxSuppressionBuffer);
 
 	//writing the image to disk
-	image_write(nonMaxSuppressionBuffer,"../images/beerFinal.ppm");
+	image_write(nonMaxSuppressionBuffer,"../images/fishmanFinal.ppm");
 	
 
 	//free images

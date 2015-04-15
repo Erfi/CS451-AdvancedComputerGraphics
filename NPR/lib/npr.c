@@ -406,6 +406,55 @@ void hysteresis(Image* src){
 			}
 		}
 	}
+	//backward
+	for(i=src->rows-2; i>0; i--){
+		for(j=src->cols-2; j>0; j--){
+			if(src->data[i][j].rgb[0] == 1){//if you have found a start to an edge (assuming grey scale image)
+				//check 8 neighboring pixels
+				if(src->data[i-1][j-1].rgb[0] == 0.5){
+					src->data[i-1][j-1].rgb[0] = 1;
+					src->data[i-1][j-1].rgb[1] = 1;
+					src->data[i-1][j-1].rgb[2] = 1;
+				}
+				if(src->data[i-1][j].rgb[0] == 0.5){
+					src->data[i-1][j].rgb[0] = 1;
+					src->data[i-1][j].rgb[1] = 1;
+					src->data[i-1][j].rgb[2] = 1;
+				}
+				if(src->data[i-1][j+1].rgb[0] == 0.5){
+					src->data[i-1][j+1].rgb[0] = 1;
+					src->data[i-1][j+1].rgb[1] = 1;
+					src->data[i-1][j+1].rgb[2] = 1;
+				}
+				if(src->data[i][j-1].rgb[0] == 0.5){
+					src->data[i][j-1].rgb[0] = 1;
+					src->data[i][j-1].rgb[1] = 1;
+					src->data[i][j-1].rgb[2] = 1;
+				}
+				if(src->data[i][j+1].rgb[0] == 0.5){
+					src->data[i][j+1].rgb[0] = 1;
+					src->data[i][j+1].rgb[1] = 1;
+					src->data[i][j+1].rgb[2] = 1;
+				}
+				if(src->data[i+1][j-1].rgb[0] == 0.5){
+					src->data[i+1][j-1].rgb[0] = 1;
+					src->data[i+1][j-1].rgb[1] = 1;
+					src->data[i+1][j-1].rgb[2] = 1;
+				}
+				if(src->data[i+1][j].rgb[0] == 0.5){
+					src->data[i+1][j].rgb[0] = 1;
+					src->data[i+1][j].rgb[1] = 1;
+					src->data[i+1][j].rgb[2] = 1;
+				}
+				if(src->data[i+1][j+1].rgb[0] == 0.5){
+					src->data[i+1][j+1].rgb[0] = 1;
+					src->data[i+1][j+1].rgb[1] = 1;
+					src->data[i+1][j+1].rgb[2] = 1;
+				}	
+			}
+		}
+	}
+
 	//suppression
 	for(i=0; i<src->rows; i++){
 		for(j=0; j<src->cols; j++){
