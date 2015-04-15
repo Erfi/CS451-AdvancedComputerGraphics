@@ -14,11 +14,11 @@ int main(int args, char* argv[]){
 	Image* src;
 	Image* border;//to hold the blured image with extended borders
 	Image* sobelMask;//to record the result after sobel operator applied
-	Image* nonMaxSuppressionBuffer;
+	Image* nonMaxSuppressionBuffer; //to hold the image after the non maximal suppression is applied
 	Kernel k;//to hold the gaussian filter convolution matrix
 	SobelOperator sop;//holds the sobel operators for horizontal and vertical axis (Gx & Gy)
 
-	src = image_read("../images/fishman.ppm");
+	src = image_read("../images/beer.ppm");
 	sobelMask = image_create(src->rows, src->cols);
 	border = borderCreate(src);
 	nonMaxSuppressionBuffer = image_create(sobelMask->rows, sobelMask->cols);
@@ -40,14 +40,13 @@ int main(int args, char* argv[]){
 	nonMaxSuppression(sobelMask, nonMaxSuppressionBuffer);
 
 	//double threshold
-	doubleThreshold(nonMaxSuppressionBuffer, 0.8, 0.2);
+	doubleThreshold(nonMaxSuppressionBuffer, 0.2, 0.18);
 
+	//hysterisis 
+	hysteresis(nonMaxSuppressionBuffer);
 
-
-	// border = borderRemoval(border);
-
-	image_write(nonMaxSuppressionBuffer,"../images/fishmanSuppressed.ppm");
-	// image_write(border,"../images/border.ppm");
+	//writing the image to disk
+	image_write(nonMaxSuppressionBuffer,"../images/beerFinal.ppm");
 	
 
 	//free images

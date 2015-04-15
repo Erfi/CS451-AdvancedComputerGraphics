@@ -344,11 +344,72 @@ void doubleThreshold(Image* src, double high, double low){
 	int i, j;
 	for(i=0; i<src->rows; i++){
 		for(j=0; j<src->cols; j++){
-			if(src->data[i][j].rgb[0] > high){
+			if(src->data[i][j].rgb[0] >= high){
 				src->data[i][j].rgb[0] = 1;
 				src->data[i][j].rgb[1] = 1;
 				src->data[i][j].rgb[2] = 1;
-			}else if(src->data[i][j].rgb[0] < low){
+			}else if(src->data[i][j].rgb[0] >= low){
+				src->data[i][j].rgb[0] = 0.5;
+				src->data[i][j].rgb[1] = 0.5;
+				src->data[i][j].rgb[2] = 0.5;
+			}
+		}
+	}
+}
+
+void hysteresis(Image* src){
+	int i, j;
+	for(i=1; i<src->rows-1; i++){
+		for(j=0; j<src->cols-1; j++){
+			if(src->data[i][j].rgb[0] == 1){//if you have found a start to an edge (assuming grey scale image)
+				//check 8 neighboring pixels
+				if(src->data[i-1][j-1].rgb[0] == 0.5){
+					src->data[i-1][j-1].rgb[0] = 1;
+					src->data[i-1][j-1].rgb[1] = 1;
+					src->data[i-1][j-1].rgb[2] = 1;
+				}
+				if(src->data[i-1][j].rgb[0] == 0.5){
+					src->data[i-1][j].rgb[0] = 1;
+					src->data[i-1][j].rgb[1] = 1;
+					src->data[i-1][j].rgb[2] = 1;
+				}
+				if(src->data[i-1][j+1].rgb[0] == 0.5){
+					src->data[i-1][j+1].rgb[0] = 1;
+					src->data[i-1][j+1].rgb[1] = 1;
+					src->data[i-1][j+1].rgb[2] = 1;
+				}
+				if(src->data[i][j-1].rgb[0] == 0.5){
+					src->data[i][j-1].rgb[0] = 1;
+					src->data[i][j-1].rgb[1] = 1;
+					src->data[i][j-1].rgb[2] = 1;
+				}
+				if(src->data[i][j+1].rgb[0] == 0.5){
+					src->data[i][j+1].rgb[0] = 1;
+					src->data[i][j+1].rgb[1] = 1;
+					src->data[i][j+1].rgb[2] = 1;
+				}
+				if(src->data[i+1][j-1].rgb[0] == 0.5){
+					src->data[i+1][j-1].rgb[0] = 1;
+					src->data[i+1][j-1].rgb[1] = 1;
+					src->data[i+1][j-1].rgb[2] = 1;
+				}
+				if(src->data[i+1][j].rgb[0] == 0.5){
+					src->data[i+1][j].rgb[0] = 1;
+					src->data[i+1][j].rgb[1] = 1;
+					src->data[i+1][j].rgb[2] = 1;
+				}
+				if(src->data[i+1][j+1].rgb[0] == 0.5){
+					src->data[i+1][j+1].rgb[0] = 1;
+					src->data[i+1][j+1].rgb[1] = 1;
+					src->data[i+1][j+1].rgb[2] = 1;
+				}	
+			}
+		}
+	}
+	//suppression
+	for(i=0; i<src->rows; i++){
+		for(j=0; j<src->cols; j++){
+			if(src->data[i][j].rgb[0] <= 0.5){
 				src->data[i][j].rgb[0] = 0;
 				src->data[i][j].rgb[1] = 0;
 				src->data[i][j].rgb[2] = 0;
@@ -356,6 +417,7 @@ void doubleThreshold(Image* src, double high, double low){
 		}
 	}
 }
+
 
 
 

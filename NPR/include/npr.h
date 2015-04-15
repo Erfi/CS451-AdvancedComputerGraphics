@@ -28,5 +28,6 @@ void sobel_print(SobelOperator* sop);
 void toGreyscale(Image* src);
 void nonMaxSuppression(Image* src, Image* buffer);
 void doubleThreshold(Image* src, double high, double low);
+void hysteresis(Image* src);
 
 #endif
