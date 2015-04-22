@@ -29,5 +29,9 @@ void toGreyscale(Image* src);
 void nonMaxSuppression(Image* src, Image* buffer);
 void doubleThreshold(Image* src, double high, double low);
 void hysteresis(Image* src);
+Image* cropBorder(Image* src, int n);
+Image* cannyEdgeDetect(Image* src, float sigma, double T_high, double T_low);
+Image* alphaBlend(Image* src, Image* edgeMask, float alpha);
+
 
 #endif

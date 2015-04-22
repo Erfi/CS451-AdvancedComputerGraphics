@@ -468,6 +468,90 @@ void hysteresis(Image* src){
 }
 
 
+/*
+croppes the border of an image "src" by "n" pixels 
+*/
+Image* cropBorder(Image* src, int n){
+	Image* cropped = NULL;
+	if(n < src->cols/2 && n < src->rows){
+		int i, j;
+		cropped = image_create(src->rows-n , src->cols-n);
+		for(i=0; i<cropped->rows; i++){
+			for(j=0; j< cropped->cols; j++){
+				cropped->data[i][j].rgb[0] = src->data[i+n][j+n].rgb[0];
+				cropped->data[i][j].rgb[1] = src->data[i+n][j+n].rgb[1];
+				cropped->data[i][j].rgb[2] = src->data[i+n][j+n].rgb[2];
+				cropped->data[i][j].theta = src->data[i+n][j+n].theta;
+			}
+		}
+	}
+	return cropped;
+}
+
+
+Image* cannyEdgeDetect(Image* src, float sigma, double T_high, double T_low){
+	Image* sobelMask;//to record the result after sobel operator applied
+	Image* border;//to hold the blured image with extended borders
+	Image* nonMaxSuppressionBuffer; //to hold the image after the non maximal suppression is applied
+	Kernel k;//to hold the gaussian filter convolution matrix
+	SobelOperator sop;//holds the sobel operators for horizontal and vertical axis (Gx & Gy)
+
+	sobelMask = image_create(src->rows, src->cols);
+	border = borderCreate(src);
+	nonMaxSuppressionBuffer = image_create(sobelMask->rows, sobelMask->cols);
+
+	//bluer
+	kernel_create(&k,sigma);
+	kernel_print(&k);
+	gaussFilter(border, &k);
+
+	//greyscale
+	toGreyscale(border);
+
+	//gradient
+	sobel_create(&sop);
+	sobel_print(&sop);
+	sobelFilter(border, sobelMask, &sop);
+
+	//non maximal suppression
+	nonMaxSuppression(sobelMask, nonMaxSuppressionBuffer);
+
+	//double threshold
+	doubleThreshold(nonMaxSuppressionBuffer, T_high, T_low);		
+
+	//hysterisis 
+	hysteresis(nonMaxSuppressionBuffer);
+
+
+	//free images
+	image_free(border);
+	image_free(sobelMask);	
+
+	return nonMaxSuppressionBuffer;
+}
+
+Image* alphaBlend(Image* src, Image* edgeMask, float alpha){
+	Image* result = NULL;
+	if(src != NULL && edgeMask != NULL){
+		result = image_create(src->rows, src->cols);
+		int i, j;
+		for(i=0; i<src->rows; i++){
+			for(j=0; j<src->cols; j++){
+				if(edgeMask->data[i][j].rgb[0] == 1){ //assuming greyscale imageMask
+					result->data[i][j].rgb[0] = (1-alpha)*src->data[i][j].rgb[0];
+					result->data[i][j].rgb[1] = (1-alpha)*src->data[i][j].rgb[1];
+					result->data[i][j].rgb[2] = (1-alpha)*src->data[i][j].rgb[2];
+				}else{
+					result->data[i][j].rgb[0] = src->data[i][j].rgb[0];
+					result->data[i][j].rgb[1] = src->data[i][j].rgb[1];
+					result->data[i][j].rgb[2] = src->data[i][j].rgb[2];
+				}
+				result->data[i][j].theta = edgeMask->data[i][j].theta;
+			}
+		}
+	}
+	return result;
+}
 
 
 
