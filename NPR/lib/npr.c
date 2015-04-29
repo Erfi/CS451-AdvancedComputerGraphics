@@ -249,30 +249,46 @@ void sobelFilter(Image* border, Image* sobelMask, SobelOperator* sop){
 			sobelMask->data[i][j].rgb[1] = sqrt(sumx[1]*sumx[1] + sumy[1]*sumy[1]); 
 			sobelMask->data[i][j].rgb[2] = sqrt(sumx[2]*sumx[2] + sumy[2]*sumy[2]);
 
+			sobelMask->data[i][j].Gx = sumx[0]; //assuming grey scale
+			sobelMask->data[i][j].Gy = sumy[0]; //assuming grey scale
+
 			//We are assuming that the picture is grey scale and the first channel (red) gives a 
 			//good representation of the theta angle
 			double tempAngle =0;
-			if(sumx[0] != 0){
-				tempAngle = atan(sumy[0]/sumx[0])*180/M_PI;
-			}else{
-				tempAngle = 90;
-			}
-			
-			if(tempAngle <0){ //just to change the range of 0 : -90 to 180:90 for easier underestanding  
-				tempAngle += 180;
-			}
+			tempAngle = (atan2(sobelMask->data[i][j].Gx,sobelMask->data[i][j].Gy)/M_PI) * 180.0;
 
+
+			// if(sumx[0] != 0){
+			// 	tempAngle = atan(sumy[0]/sumx[0])*180/M_PI;
+			// }else{
+			// 	tempAngle = 90;
+			// }
+			// printf("angle: %f\n", tempAngle);
+			// if(tempAngle <0){ //just to change the range of 0 : -90 to 180:90 for easier underestanding  
+			// 	tempAngle += 180;
+			// }
+			// printf("angle after: %f\n", tempAngle);
 			//categorizing the angles to 0, 45, 90, 135
-			if((tempAngle >=0 && tempAngle <22.5) || (tempAngle >157.5 && tempAngle <=180)){ //0:22.5 && 157.5:180
-				sobelMask->data[i][j].theta = 0;
-			}else if(tempAngle >= 22.5 && tempAngle < 67.5){ //22.5:67.5
-				sobelMask->data[i][j].theta = 45;
-			}else if(tempAngle >= 67.5 && tempAngle <112.5){ //67.5:112.5
-				sobelMask->data[i][j].theta = 90;
-			}else{											//112.5:157.5
-				sobelMask->data[i][j].theta = 135;
-			}
+			// if((tempAngle >=0 && tempAngle <22.5) || (tempAngle >157.5 && tempAngle <=180)){ //0:22.5 && 157.5:180
+			// 	sobelMask->data[i][j].theta = 0;
+			// }else if(tempAngle >= 22.5 && tempAngle < 67.5){ //22.5:67.5
+			// 	sobelMask->data[i][j].theta = 45;
+			// }else if(tempAngle >= 67.5 && tempAngle <112.5){ //67.5:112.5
+			// 	sobelMask->data[i][j].theta = 90;
+			// }else{											//112.5:157.5
+			// 	sobelMask->data[i][j].theta = 135;
+			// }
 			// printf("Theta: %d\n", sobelMask->data[i][j].theta);
+
+			/* Convert actual edge direction to approximate value */
+			if ( ( (tempAngle < 22.5) && (tempAngle > -22.5) ) || (tempAngle > 157.5) || (tempAngle < -157.5) )
+				sobelMask->data[i][j].theta = 0;
+			if ( ( (tempAngle > 22.5) && (tempAngle < 67.5) ) || ( (tempAngle < -112.5) && (tempAngle > -157.5) ) )
+				sobelMask->data[i][j].theta = 45;
+			if ( ( (tempAngle > 67.5) && (tempAngle < 112.5) ) || ( (tempAngle < -67.5) && (tempAngle > -112.5) ) )
+				sobelMask->data[i][j].theta = 90;
+			if ( ( (tempAngle > 112.5) && (tempAngle < 157.5) ) || ( (tempAngle < -22.5) && (tempAngle > -67.5) ) )
+				sobelMask->data[i][j].theta = 135;
 		}
 
 	}
@@ -289,31 +305,11 @@ void nonMaxSuppression(Image* src, Image* buffer){
 				buffer->data[i][j].rgb[1] = 0;
 				buffer->data[i][j].rgb[2] = 0;
 				buffer->data[i][j].theta = src->data[i][j].theta;
+				buffer->data[i][j].Gx = src->data[i][j].Gx;
+				buffer->data[i][j].Gy = src->data[i][j].Gy;
 				continue;
 			}
 			if(src->data[i][j].theta == 0){
-				if((src->data[i][j].rgb[0] < src->data[i][j+1].rgb[0]) || (src->data[i][j].rgb[0] < src->data[i][j-1].rgb[0])){
-					buffer->data[i][j].rgb[0] = 0;
-					buffer->data[i][j].rgb[1] = 0;
-					buffer->data[i][j].rgb[2] = 0;
-				}else{
-					buffer->data[i][j].rgb[0] = src->data[i][j].rgb[0];
-					buffer->data[i][j].rgb[1] = src->data[i][j].rgb[1];
-					buffer->data[i][j].rgb[2] = src->data[i][j].rgb[2];
-				}
-				buffer->data[i][j].theta = src->data[i][j].theta;
-			}else if(src->data[i][j].theta == 45){
-				if((src->data[i][j].rgb[0] < src->data[i-1][j+1].rgb[0]) || (src->data[i][j].rgb[0] < src->data[i+1][j-1].rgb[0])){
-					buffer->data[i][j].rgb[0] = 0;
-					buffer->data[i][j].rgb[1] = 0;
-					buffer->data[i][j].rgb[2] = 0;
-				}else{
-					buffer->data[i][j].rgb[0] = src->data[i][j].rgb[0];
-					buffer->data[i][j].rgb[1] = src->data[i][j].rgb[1];
-					buffer->data[i][j].rgb[2] = src->data[i][j].rgb[2];
-				}
-				buffer->data[i][j].theta = src->data[i][j].theta;
-			}else if(src->data[i][j].theta == 90){
 				if((src->data[i][j].rgb[0] < src->data[i-1][j].rgb[0]) || (src->data[i][j].rgb[0] < src->data[i+1][j].rgb[0])){
 					buffer->data[i][j].rgb[0] = 0;
 					buffer->data[i][j].rgb[1] = 0;
@@ -323,8 +319,7 @@ void nonMaxSuppression(Image* src, Image* buffer){
 					buffer->data[i][j].rgb[1] = src->data[i][j].rgb[1];
 					buffer->data[i][j].rgb[2] = src->data[i][j].rgb[2];
 				}
-				buffer->data[i][j].theta = src->data[i][j].theta;
-			}else if(src->data[i][j].theta == 135){
+			}else if(src->data[i][j].theta == 45){
 				if((src->data[i][j].rgb[0] < src->data[i-1][j-1].rgb[0]) || (src->data[i][j].rgb[0] < src->data[i+1][j+1].rgb[0])){
 					buffer->data[i][j].rgb[0] = 0;
 					buffer->data[i][j].rgb[1] = 0;
@@ -334,8 +329,30 @@ void nonMaxSuppression(Image* src, Image* buffer){
 					buffer->data[i][j].rgb[1] = src->data[i][j].rgb[1];
 					buffer->data[i][j].rgb[2] = src->data[i][j].rgb[2];
 				}
-				buffer->data[i][j].theta = src->data[i][j].theta;
+			}else if(src->data[i][j].theta == 90){
+				if((src->data[i][j].rgb[0] < src->data[i][j-1].rgb[0]) || (src->data[i][j].rgb[0] < src->data[i][j+1].rgb[0])){
+					buffer->data[i][j].rgb[0] = 0;
+					buffer->data[i][j].rgb[1] = 0;
+					buffer->data[i][j].rgb[2] = 0;
+				}else{
+					buffer->data[i][j].rgb[0] = src->data[i][j].rgb[0];
+					buffer->data[i][j].rgb[1] = src->data[i][j].rgb[1];
+					buffer->data[i][j].rgb[2] = src->data[i][j].rgb[2];
+				}
+			}else if(src->data[i][j].theta == 135){
+				if((src->data[i][j].rgb[0] < src->data[i-1][j+1].rgb[0]) || (src->data[i][j].rgb[0] < src->data[i+1][j-1].rgb[0])){
+					buffer->data[i][j].rgb[0] = 0;
+					buffer->data[i][j].rgb[1] = 0;
+					buffer->data[i][j].rgb[2] = 0;
+				}else{
+					buffer->data[i][j].rgb[0] = src->data[i][j].rgb[0];
+					buffer->data[i][j].rgb[1] = src->data[i][j].rgb[1];
+					buffer->data[i][j].rgb[2] = src->data[i][j].rgb[2];
+				}
 			}
+			buffer->data[i][j].theta = src->data[i][j].theta;
+			buffer->data[i][j].Gx = src->data[i][j].Gx;
+			buffer->data[i][j].Gy = src->data[i][j].Gy;
 		}
 	}
 }
@@ -482,6 +499,9 @@ Image* cropBorder(Image* src, int n){
 				cropped->data[i][j].rgb[1] = src->data[i+n][j+n].rgb[1];
 				cropped->data[i][j].rgb[2] = src->data[i+n][j+n].rgb[2];
 				cropped->data[i][j].theta = src->data[i+n][j+n].theta;
+				cropped->data[i][j].Gx = src->data[i+n][j+n].Gx;
+				cropped->data[i][j].Gy = src->data[i+n][j+n].Gy;
+
 			}
 		}
 	}
@@ -504,23 +524,29 @@ Image* cannyEdgeDetect(Image* src, float sigma, double T_high, double T_low){
 	kernel_create(&k,sigma);
 	kernel_print(&k);
 	gaussFilter(border, &k);
+	image_write(border, "../images/CLAS/CLASSS/Step1_gauss.ppm");
 
 	//greyscale
 	toGreyscale(border);
+	image_write(border, "../images/CLAS/CLASSS/Step2_greyScale.ppm");
 
 	//gradient
 	sobel_create(&sop);
 	sobel_print(&sop);
 	sobelFilter(border, sobelMask, &sop);
+	image_write(sobelMask, "../images/CLAS/CLASSS/Step3_gradient.ppm");
 
 	//non maximal suppression
 	nonMaxSuppression(sobelMask, nonMaxSuppressionBuffer);
+	image_write(nonMaxSuppressionBuffer, "../images/CLAS/CLASSS/Step4_NonMaxSuppression.ppm");
 
 	//double threshold
-	doubleThreshold(nonMaxSuppressionBuffer, T_high, T_low);		
+	doubleThreshold(nonMaxSuppressionBuffer, T_high, T_low);
+	image_write(nonMaxSuppressionBuffer, "../images/CLAS/CLASSS/Step5_doubleThreshold.ppm");		
 
 	//hysterisis 
 	hysteresis(nonMaxSuppressionBuffer);
+	image_write(nonMaxSuppressionBuffer, "../images/CLAS/CLASSS/Step6_Hysterisis.ppm");
 
 
 	//free images
@@ -530,17 +556,17 @@ Image* cannyEdgeDetect(Image* src, float sigma, double T_high, double T_low){
 	return nonMaxSuppressionBuffer;
 }
 
-Image* alphaBlend(Image* src, Image* edgeMask, float alpha){
+Image* alphaBlend(Image* src, Image* edgeMask){
 	Image* result = NULL;
 	if(src != NULL && edgeMask != NULL){
 		result = image_create(src->rows, src->cols);
 		int i, j;
 		for(i=0; i<src->rows; i++){
 			for(j=0; j<src->cols; j++){
-				if(edgeMask->data[i][j].rgb[0] == 1){ //assuming greyscale imageMask
-					result->data[i][j].rgb[0] = (1-alpha)*src->data[i][j].rgb[0];
-					result->data[i][j].rgb[1] = (1-alpha)*src->data[i][j].rgb[1];
-					result->data[i][j].rgb[2] = (1-alpha)*src->data[i][j].rgb[2];
+				if(edgeMask->data[i][j].rgb[0] != 0){ //assuming greyscale imageMask
+					result->data[i][j].rgb[0] = (1-edgeMask->data[i][j].rgb[0])*src->data[i][j].rgb[0];
+					result->data[i][j].rgb[1] = (1-edgeMask->data[i][j].rgb[0])*src->data[i][j].rgb[1];
+					result->data[i][j].rgb[2] = (1-edgeMask->data[i][j].rgb[0])*src->data[i][j].rgb[2];  
 				}else{
 					result->data[i][j].rgb[0] = src->data[i][j].rgb[0];
 					result->data[i][j].rgb[1] = src->data[i][j].rgb[1];
@@ -551,6 +577,120 @@ Image* alphaBlend(Image* src, Image* edgeMask, float alpha){
 		}
 	}
 	return result;
+}
+
+
+//used to thiken the edges in the edge mask
+void thickenLines(Image* edgeMask, Image* thickMask, int thickness){
+	if(edgeMask != NULL && thickMask != NULL){
+		int i, j, k;
+		for(i=0; i<edgeMask->rows; i++){
+			for(j=0; j<edgeMask->cols; j++){
+				if(edgeMask->data[i][j].rgb[0] == 1){//assuming grey scale (if edge)
+					thickMask->data[i][j].rgb[0] = 1;
+					thickMask->data[i][j].rgb[1] = 1;
+					thickMask->data[i][j].rgb[2] = 1;
+					switch(edgeMask->data[i][j].theta){
+						case 0:
+							if(i- thickness >= 0){
+								for(k=0; k<=thickness; k++){
+									thickMask->data[i-k][j].rgb[0] = 1;
+									thickMask->data[i-k][j].rgb[1] = 1;
+									thickMask->data[i-k][j].rgb[2] = 1;
+								}
+							}
+							if(i+ thickness < edgeMask->rows){
+								for(k=0; k<=thickness; k++){
+									thickMask->data[i+k][j].rgb[0] = 1;
+									thickMask->data[i+k][j].rgb[1] = 1;
+									thickMask->data[i+k][j].rgb[2] = 1;
+								}
+							}
+							break;
+
+						case 45:
+							if(i- thickness >= 0){
+								for(k=0; k<= thickness; k++){
+									thickMask->data[i-k][j].rgb[0] = 1;
+									thickMask->data[i-k][j].rgb[1] = 1;
+									thickMask->data[i-k][j].rgb[2] = 1;
+								}
+							}
+							if(i+ thickness < edgeMask->rows){
+								for(k=0; k<= thickness; k++){
+									thickMask->data[i+k][j].rgb[0] = 1;
+									thickMask->data[i+k][j].rgb[1] = 1;
+									thickMask->data[i+k][j].rgb[2] = 1;
+								}
+							}
+							if(j- thickness >= 0){
+								for(k=0; k<= thickness; k++){
+									thickMask->data[i][j-k].rgb[0] = 1;
+									thickMask->data[i][j-k].rgb[1] = 1;
+									thickMask->data[i][j-k].rgb[2] = 1;
+								}
+							}
+							if(j+ thickness < edgeMask->cols){
+								for(k=0; k<= thickness; k++){
+									thickMask->data[i][j+k].rgb[0] = 1;
+									thickMask->data[i][j+k].rgb[1] = 1;
+									thickMask->data[i][j+k].rgb[2] = 1;
+								}
+							}
+							break;
+
+						case 90:
+							if(j- thickness >= 0){
+								for(k=0; k<= thickness; k++){
+									thickMask->data[i][j-k].rgb[0] = 1;
+									thickMask->data[i][j-k].rgb[1] = 1;
+									thickMask->data[i][j-k].rgb[2] = 1;
+								}
+							}
+							if(j+ thickness < edgeMask->cols){
+								for(k=0; k<= thickness; k++){
+									thickMask->data[i][j+k].rgb[0] = 1;
+									thickMask->data[i][j+k].rgb[1] = 1;
+									thickMask->data[i][j+k].rgb[2] = 1;
+								}
+							}
+							break;
+
+						case 135: //same as 45
+							if(i- thickness >= 0){
+								for(k=0; k<= thickness; k++){
+									thickMask->data[i-k][j].rgb[0] = 1;
+									thickMask->data[i-k][j].rgb[1] = 1;
+									thickMask->data[i-k][j].rgb[2] = 1;
+								}
+							}
+							if(i+ thickness < edgeMask->rows){
+								for(k=0; k<= thickness; k++){
+									thickMask->data[i+k][j].rgb[0] = 1;
+									thickMask->data[i+k][j].rgb[1] = 1;
+									thickMask->data[i+k][j].rgb[2] = 1;
+								}
+							}
+							if(j- thickness >= 0){
+								for(k=0; k<= thickness; k++){
+									thickMask->data[i][j-k].rgb[0] = 1;
+									thickMask->data[i][j-k].rgb[1] = 1;
+									thickMask->data[i][j-k].rgb[2] = 1;
+								}
+							}
+							if(j+ thickness < edgeMask->cols){
+								for(k=0; k<= thickness; k++){
+									thickMask->data[i][j+k].rgb[0] = 1;
+									thickMask->data[i][j+k].rgb[1] = 1;
+									thickMask->data[i][j+k].rgb[2] = 1;
+								}
+							}
+							break;
+					}
+				}
+			}
+		}
+	}
 }
 
 

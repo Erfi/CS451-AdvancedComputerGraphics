@@ -13,22 +13,43 @@ File: nprtest.c
 int main(int args, char* argv[]){
 	Image* src;
 	Image* edgeMask;
+	Image* thickMask;
 	Image* final;
 
-	if(args < 5){
-		printf("Not enough argumets: <file> <sigma> <T1> <T2> <Alpha>\n");
+
+	if(args < 4){
+		printf("Not enough argumets: <file> <sigma> <T1> <T2>\n");
 		exit(-1);
 	}else{
-		src = image_read("../images/brick.ppm");
+		src = image_read("../images/beerFall.ppm");
+		image_write(src, "../images/CLAS/CLASSS/Original.ppm");
+		
 		edgeMask = cannyEdgeDetect(src, atof(argv[1]), atof(argv[2]), atof(argv[3]));
-		final = alphaBlend(src, edgeMask,atof(argv[4]));
 
+		//thinkening the edges
+		thickMask = image_create(edgeMask->rows, edgeMask->cols);
+		thickenLines(edgeMask, thickMask,2);
+		image_write(thickMask, "../images/CLAS/CLASSS/Step7_thickening.ppm");
 
-		image_write(final,"../images/brickfinal.ppm");
+		//anti_Alias
+		Image* Alias = borderCreate(thickMask);
+		Kernel k;
+		kernel_create(&k, 5);
+		gaussFilter(Alias, &k);
+		Image* anti_aliased = cropBorder(Alias, 2);
+		image_write(anti_aliased, "../images/CLAS/CLASSS/Step8_antiAlias.ppm");
+
+		//blend
+		final = alphaBlend(src, anti_aliased);
+		image_write(final, "../images/CLAS/CLASSS/Step9_Blending.ppm");
+
 
 		image_free(src);
 		image_free(edgeMask);
 		image_free(final);
+		image_free(thickMask);
+		image_free(Alias);
+		image_free(anti_aliased);
 	}
 
 
