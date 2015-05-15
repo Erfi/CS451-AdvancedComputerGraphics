@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>MyScene</title>
+    <script src="../Javascript/Three.js"></script>
+    <script src="../Javascript/dat.gui.js"></script>
+    <script>
+    var renderer = null,
+        scene = null,
+        camera = null,
+        pitchObject = null,
+        yawObject = null,
+        cameraSpeed = 1,
+        cameraGroup = null,
+        mainFighter = null,
+        speed = 1;
+        mouseAction = false;
+        rotateXLeft = false,
+        rotateXRight = false,
+        rotateYLeft = false,
+        rotateYRight = false,
+        rotateZLeft = false,
+        rotateZRight = false,
+        radius=10000,
+        radiusSQ=(radius*radius)/10,
+        boidList = [],
+        PI_2 = Math.PI / 2;
+
+    var materialStruct = {
+        material1 : null,
+        material2 : null,
+        material3 : null,
+        material4 : null,
+        material5 : null,
+        material6 : null,
+    };
+
+    var geometryStruct = {
+        //for fighter_1
+        sphere1 : null,
+        cylinder1 : null,
+        wing1 : null,
+        //for sky
+        skySphere : null,
+    };
+
+    var flockControls = {
+        Cohesion : 100,
+        Separation : 10000,
+        Alignment : 10000,
+        Neighboring : false,
+        NeighborRadius : 10000,
+    };
+
+
+
+
+// wrapper that holds velocity and particle
+    function boid(object3d){
+        this.obj = object3d;
+        this.velocity = new THREE.Vector3(-Math.random(),-Math.random(),Math.random());
+    }
+
+    
+
+function onLoad()
+{
+    // Grab our container div
+    var container = document.getElementById("container");
+    // Create the Three.js renderer, add it to our div
+    renderer = new THREE.WebGLRenderer( { antialias: true } );
+    renderer.setSize(container.offsetWidth, container.offsetHeight);
+    container.appendChild( renderer.domElement );
+    // Create a new Three.js scene
+    scene = new THREE.Scene();
+    // Put in a camera
+    camera = new THREE.PerspectiveCamera( 45, container.offsetWidth / container.offsetHeight, 1, 100000 );
+    camera.position.set( 0, 0, 0 );
+    // Create a directional light to show off the object
+    var light = new THREE.DirectionalLight( 0xffffff, 1.5);
+    light.position.set(0, 0, 1);
+    scene.add( light );
+    //create ambient light
+    var lightAm = new THREE.AmbientLight( 0xffffff, 1.5);
+    scene.add( lightAm );
+
+    //make the material and geometery "library"
+    makeMaterial();
+    makeGeometry();
+
+    cameraGroup = new THREE.Object3D();
+
+    // create the swarm of fighters
+    for (var i = 1 ; i <400; i++) {
+       
+        var fighter = new buildFighter_1();
+
+            fighter.position.x = (Math.random()*500);
+            fighter.position.y = (Math.random()*500 );
+            fighter.position.z = (0);
+            boidList[i]= new boid(fighter);
+
+            scene.add(fighter);
+    };
+
+    // adding the sky
+    var geometry = new THREE.SphereGeometry(radius, 60, 40);
+    var uniforms = {
+      texture: { type: 't', value: THREE.ImageUtils.loadTexture('../Images/sky1.jpg') }
+    };
+
+    var material = new THREE.ShaderMaterial( {
+      uniforms:       uniforms,
+      vertexShader:   document.getElementById("stars-vertex").textContent,
+      fragmentShader: document.getElementById('stars-fragment').textContent
+    });
+
+    skyBox = new THREE.Mesh(geometry, material);
+    skyBox.scale.set(-1, 1, 1);
+    skyBox.rotationOrder = 'XZY';
+    skyBox.renderDepth = 10000.0;
+    scene.add(skyBox);
+
+    //Camera Control
+    setCameraControls();
+
+    //making the gui
+    makeGUI();
+
+    // Run our render loop
+    render(); 
+}
+
+function render(){
+        renderer.render( scene, camera );
+        boidRules()
+        requestAnimationFrame(render);
+    }
+
+function setCameraControls(){
+    camera.rotation.set( 0, 0, 0 );
+    pitchObject = new THREE.Object3D();
+    pitchObject.add( camera );
+
+    yawObject = new THREE.Object3D();
+    yawObject.add(pitchObject);
+
+    scene.add(yawObject);
+
+    addMouseHandler();
+    addKeyboardHandler();
+}
+
+function makeGUI(){
+    GUI = new dat.GUI();
+    var f1 = GUI.addFolder('Flock Controlls');
+    var f2 = GUI.addFolder('Neighboring');
+    f1.add(flockControls, 'Alignment', 0, 10000);
+    f1.add(flockControls, 'Separation', 0, 10000);
+    f1.add(flockControls, 'Cohesion', 0, 100);
+    f2.add(flockControls, 'Neighboring');
+    f2.add(flockControls, 'NeighborRadius', 10000, 1000000).name('Radius');
+}
+
+
+//=======================================================
+//=================KEYBOARD CONTROLLER===================
+//=======================================================
+    function addKeyboardHandler(){
+        window.addEventListener("keypress", onKeyPress, false);
+    }
+
+    function onKeyPress(Event){
+        Event.preventDefault();
+        keyRotation(Event.keyCode, yawObject);
+    }
+
+    function keyRotation(code, object){
+
+        if (code == 97){ //a
+            object.translateX(-cameraSpeed);
+        } else if (code == 100){//d
+            object.translateX(+cameraSpeed);
+        }else if (code == 119){//w
+            object.translateY(cameraSpeed);
+        }else if (code == 115){//s
+            object.translateY(-cameraSpeed);
+        }else if (code == 113){//q
+            object.translateZ(cameraSpeed);
+        }else if (code == 101){//e
+            object.translateZ(-cameraSpeed);
+        }else if (code == 61){//=/+
+            cameraSpeed += 1;
+        }else if (code == 45){//-
+            if(cameraSpeed>0){
+               cameraSpeed -= 1; 
+            }
+        }else if (code == 32){
+            mouseAction = !mouseAction;
+        }
+    }
+
+//=======================================================
+//===================MOUSE CONTROLLER====================
+//=======================================================
+function addMouseHandler(){
+        window.addEventListener("mousemove", onMouseMove, false);
+}
+
+var onMouseMove = function ( event ) {
+    if(mouseAction){
+        var movementX = event.clientX || event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+        var movementY = event.clientY || event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+        movementX -= renderer.domElement.width/2;
+        movementY -= renderer.domElement.height/2;
+
+        yawObject.rotation.y -= movementX * 0.0001;
+        pitchObject.rotation.x -= movementY * 0.0001;
+
+        pitchObject.rotation.x = Math.max( - PI_2, Math.min( PI_2, pitchObject.rotation.x ) );
+    }
+};
+
+
+function degInRad(deg) {
+    return deg * Math.PI / 180;
+}
+
+function cameraLookDir(camera) {
+    var vector = new THREE.Vector3(0, 0, -1);
+    vector.applyEuler(camera.rotation, camera.eulerOrder);
+    return vector;
+}
+
+//=======================================================
+//====================MODEL CREATION=====================
+//=======================================================
+
+/*
+Add to this function as you add to the material you 
+use for different fighters/models
+*/
+function makeMaterial(){
+    //Material_1
+    var url1 = "../Images/metal1.jpg";
+    var tex1 = THREE.ImageUtils.loadTexture(url1);
+    materialStruct.material1 = new THREE.MeshPhongMaterial({ map: tex1 });
+
+    //Material_2
+    var url2 = "../Images/body2.jpg";
+    var tex2 = THREE.ImageUtils.loadTexture(url2);
+    materialStruct.material2 = new THREE.MeshPhongMaterial({ map: tex2 });
+
+    //Material_3
+    var url3 = "../Images/ice.png";
+    var tex3 = THREE.ImageUtils.loadTexture(url3);
+    materialStruct.material3 = new THREE.MeshPhongMaterial({ map: tex3 });
+
+    //Material_4
+    var url4 = "../Images/destroy.png";
+    var tex4 = THREE.ImageUtils.loadTexture(url4);
+    materialStruct.material4 = new THREE.MeshPhongMaterial({ map: tex4 });
+
+    //Material_5
+    var url5 = "../Images/diamond.png";
+    var tex5 = THREE.ImageUtils.loadTexture(url5);
+    materialStruct.material5 = new THREE.MeshPhongMaterial({ map: tex5 });
+
+    //Material_6
+    var url6 = "../Images/redstone.png";
+    var tex6 = THREE.ImageUtils.loadTexture(url6);
+    materialStruct.material6 = new THREE.MeshPhongMaterial({ map: tex6 });
+
+}
+
+/*
+Add to this function as you add different geometries for
+different fighters/models
+*/
+function makeGeometry(){
+    geometryStruct.sphere1 = new THREE.SphereGeometry(5, 32, 32);
+    geometryStruct.cylinder1 = new THREE.CylinderGeometry(2,2,5);
+    geometryStruct.wing1 = new THREE.BoxGeometry(2,20,20);
+    geometryStruct.skySphere = new THREE.SphereGeometry(radius, 60, 40);
+    
+}
+
+//fighter_1 model
+function buildFighter_1(){
+    //creating mesh
+    var body = new THREE.Mesh(geometryStruct.sphere1, materialStruct.material2);
+    var cylinder1 = new THREE.Mesh(geometryStruct.cylinder1, materialStruct.material6);
+    var cylinder2 = new THREE.Mesh(geometryStruct.cylinder1, materialStruct.material6);
+    var wing1 = new THREE.Mesh(geometryStruct.wing1, materialStruct.material5);
+    var wing2 = new THREE.Mesh(geometryStruct.wing1, materialStruct.material5);
+
+    cylinder1.translateX(-7)
+    cylinder2.translateX(7);
+    wing1.translateX(10);
+    wing2.translateX(-10);
+    cylinder1.rotation.z += 1.57;
+    cylinder2.rotation.z += 1.57;
+    body.rotation.y-=degInRad(270);
+
+    var fighter =  new THREE.Object3D();
+    fighter.add(body);
+    fighter.add(cylinder1);
+    fighter.add(cylinder2);
+    fighter.add(wing1);
+    fighter.add(wing2);
+
+    return fighter;
+}
+
+
+
+
+//=======================================================
+//======================BOID RULES=======================
+//=======================================================
+    function boidRules(){
+         // console.log("toplevel");
+        // console.log(boidList.length);
+        for (j = 1; j < boidList.length; j++) {
+            // console.log(j);
+            if(flockControls.Neighboring){
+                var neighbors = getNeighbors(boidList[j]);
+                var v1 = rule1(boidList[j],neighbors);
+                var v2 = rule2(boidList[j],neighbors);
+                var v3 = rule3(boidList[j],neighbors);
+                var v4 = rule4(boidList[j]);
+            }else{
+                var v1 = rule1(boidList[j],boidList);
+                var v2 = rule2(boidList[j],boidList);
+                var v3 = rule3(boidList[j],boidList);
+                var v4 = rule4(boidList[j]);
+            }
+
+            // v1.normalize();
+            // v2.normalize();
+            // v3.normalize();
+            boidList[j].velocity.add(v1);
+            boidList[j].velocity.add(v2);
+            boidList[j].velocity.add(v3);
+            boidList[j].velocity.add(v4);
+
+            boidList[j].obj.lookAt(boidList[j].velocity);
+
+            boidList[j].obj.position.add(boidList[j].velocity);
+            // boidList[j].obj.lookAt(boidList[j].obj.position);
+        };
+    }
+
+    // gets all the local neighbors of the boid
+    function getNeighbors(boid){
+        var neighbors = [];
+        var vec = new THREE.Vector3();
+        for (var k = boidList.length - 1; k >= 1; k--) {
+            if(boidList[k] != boid){
+                vec.subVectors(boidList[k].obj.position,boid.obj.position)
+                // console.log(vec.lengthSq());
+                if(vec.lengthSq()<flockControls.NeighborRadius){
+                    // console.log("happening");
+                    neighbors[neighbors.length] = boidList[k];
+                }
+            }
+            
+        };
+        return neighbors;
+    }
+
+// velocity matching
+    function rule3(boid3,neighbors){
+        // console.log(neighbors);
+        var vec = new THREE.Vector3();
+        // console.log(neighbors.length);
+        for (x = 1; x < neighbors.length; x++) {
+            // console.log(boid);
+            // console.log(neighbors[j].obj.position);
+           vec.addVectors(vec,neighbors[x].velocity);
+           // console.log(vec);
+        };
+        vec.divideScalar(neighbors.length);
+        vec.subVectors(vec,boid3.velocity);
+        vec.divideScalar(flockControls.Cohesion+1);
+        return vec;
+    }
+
+
+// seperation
+    function rule2(boid2,neighbors){
+        var vec = new THREE.Vector3();
+        var c = new THREE.Vector3();
+        for (i = 1; i < neighbors.length; i++) {
+            var b = neighbors[i];
+            // console.log(boid2);
+            vec.subVectors(b.obj.position,boid2.obj.position)
+            if(vec.lengthSq()< 5000){
+                vec.subVectors(b.obj.position,boid2.obj.position);
+                c.subVectors(c,vec);
+
+            }
+            // console.log(c);
+
+        };
+        c.divideScalar(flockControls.Separation+1);
+        return c;
+    }
+
+// all boids attempt to move to the average position of it's neighbors
+    function rule1(boid,neighbors){
+        // console.log(neighbors);
+        var vec = new THREE.Vector3();
+        // console.log(neighbors.length);
+        for (x = 1; x < neighbors.length; x++) {
+            // console.log(boid);
+            // console.log(neighbors[j].obj.position);
+           vec.addVectors(vec,neighbors[x].obj.position);
+           // console.log(vec);
+        };
+        vec.divideScalar(neighbors.length);
+        vec.subVectors(vec,boid.obj.position);
+        vec.divideScalar(flockControls.Alignment+1);
+        return vec;
+    }
+
+// enforce bounding sphere
+    function rule4(boid4){
+        var vec = new THREE.Vector3();
+        var c = new THREE.Vector3();
+            // console.log(boid2);
+            // vec.subVectors(boid2.obj.position)
+            if(boid4.obj.position.lengthSq()> radiusSQ){
+                vec.sub(boid4.obj.position);
+                // console.log()
+                // c.subVectors(c,vec);
+            }
+            // console.log(c);
+        vec.divideScalar(10000);
+        return vec;
+    }
+
+    </script>
+
+<script type="application/x-glsl" id="stars-vertex">
+varying vec2 vUV;
+
+void main() {
+  vUV = uv;
+  vec4 pos = vec4(position, 1.0);
+  gl_Position = projectionMatrix * modelViewMatrix * pos;
+}
+</script>
+
+
+<script type="application/x-glsl" id="stars-fragment">
+uniform sampler2D texture;
+varying vec2 vUV;
+
+void main() {
+  vec4 sample = texture2D(texture, vUV);
+  gl_FragColor = vec4(sample.xyz, sample.w);
+}
+</script>
+
+</head>
+<body onLoad="onLoad();" style="">
+    <div id="container"
+        style="width:100%; height:100%; position:absolute;">
+    </div>
+</body>
+</html>
